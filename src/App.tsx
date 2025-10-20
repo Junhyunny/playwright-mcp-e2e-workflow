@@ -1,6 +1,8 @@
+import TodoList from "./components/TodoList.tsx"
+
 function App() {
 	return (
-		<>Hello World</>
+		<TodoList />
 	)
 }
 
