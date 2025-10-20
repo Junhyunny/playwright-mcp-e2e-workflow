@@ -28,7 +28,7 @@ description: E2E 테스트를 수행하는 프롬프트
 
 # 후속 작업
 
-해당 테스트 시나리오에 대한 E2E 테스트 코드 만들어 Github `REPOSITORY`의 `e2e/{story-id}` 브랜치(branch)에 코드를 push 한다.
+테스트 시나리오에 대한 E2E 테스트 코드를 생성 후 Github `REPOSITORY`의 `e2e/{story-id}` 브랜치(branch)에 push 한다.
+push 후 main 브랜치로 pull request를 요청한다.
 테스트 파일 이름은 `{story-id}.spec.ts` 형식을 따른다.
-push가 완료되면 main 브랜치로 pull request를 요청한다.
 테스트 코드는 `e2e/**` 경로 하위에 존재한다. 현재 프로젝트 경로에서 `e2e/**` 경로에 테스트 코드가 없다면, 원격 레포지토리의 `e2e/**` 경로를 참조한다.
