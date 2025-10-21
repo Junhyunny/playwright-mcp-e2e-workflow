@@ -1,122 +1,107 @@
 import { test, expect } from '@playwright/test';
 
-/**
- * Story #200010919: User can view the TODO application screen
- * 
- * This E2E test validates the complete user journey for the TODO application,
- * covering all acceptance criteria specified in the story.
- */
-
-test.describe('TODO Application - User Journey', () => {
+test.describe('TODO Application - User Journey Test (#200010919)', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the application
     await page.goto('http://localhost:5173');
     
     // Clear local storage to start with a clean state
-    await page.evaluate(() => localStorage.clear());
+    await page.evaluate(() => {
+      localStorage.clear();
+    });
+    
+    // Reload the page after clearing storage
     await page.reload();
   });
 
-  test('complete user journey: view UI, add items, and verify persistence', async ({ page }) => {
-    // Step 1-4: Verify TODO application screen elements
-    await test.step('Verify TODO application UI elements', async () => {
-      // Verify "TODO 리스트" heading is displayed
-      const heading = page.getByRole('heading', { name: 'TODO 리스트', level: 1 });
-      await expect(heading).toBeVisible();
+  test('User can view and interact with TODO application', async ({ page }) => {
+    // Steps 1-4: Verify initial screen elements
+    // Step 2: Verify "TODO 리스트" title is visible
+    const title = page.getByRole('heading', { name: 'TODO 리스트', level: 1 });
+    await expect(title).toBeVisible();
 
-      // Verify input textbox is displayed
-      const inputBox = page.getByRole('textbox');
-      await expect(inputBox).toBeVisible();
+    // Step 3: Verify input box (textbox) is visible
+    const inputBox = page.getByRole('textbox');
+    await expect(inputBox).toBeVisible();
 
-      // Verify "추가" (Add) button is displayed
-      const addButton = page.getByRole('button', { name: '추가' });
-      await expect(addButton).toBeVisible();
+    // Step 4: Verify "추가" button is visible
+    const addButton = page.getByRole('button', { name: '추가' });
+    await expect(addButton).toBeVisible();
 
-      // Verify empty state message
-      await expect(page.getByText('할 일이 없습니다.')).toBeVisible();
-    });
+    // Verify empty state message
+    await expect(page.getByText('할 일이 없습니다.')).toBeVisible();
 
-    // Step 5-8: Add first TODO item
-    await test.step('Add first TODO item "Buy groceries"', async () => {
-      const inputBox = page.getByRole('textbox');
-      const addButton = page.getByRole('button', { name: '추가' });
+    // Steps 5-8: Add first TODO item "Buy groceries"
+    // Step 5: Enter first TODO item
+    await inputBox.fill('Buy groceries');
+    
+    // Step 6: Click add button
+    await addButton.click();
 
-      // Type first TODO item
-      await inputBox.fill('Buy groceries');
-      
-      // Click add button
-      await addButton.click();
+    // Step 7: Verify "Buy groceries" item is added to the list
+    const firstItem = page.getByRole('listitem').filter({ hasText: 'Buy groceries' });
+    await expect(firstItem).toBeVisible();
 
-      // Verify item is added to the list
-      const todoList = page.getByRole('list');
-      await expect(todoList.getByRole('listitem')).toHaveCount(1);
-      await expect(todoList.getByText('Buy groceries')).toBeVisible();
+    // Step 8: Verify input box is cleared
+    await expect(inputBox).toHaveValue('');
 
-      // Verify input box is cleared
-      await expect(inputBox).toHaveValue('');
+    // Verify empty state message is no longer visible
+    await expect(page.getByText('할 일이 없습니다.')).not.toBeVisible();
 
-      // Verify empty state message is gone
-      await expect(page.getByText('할 일이 없습니다.')).not.toBeVisible();
-    });
+    // Steps 9-12: Add second TODO item "Read a book"
+    // Step 9: Enter second TODO item
+    await inputBox.fill('Read a book');
+    
+    // Step 10: Click add button
+    await addButton.click();
 
-    // Step 9-11: Add second TODO item and verify ordering
-    await test.step('Add second TODO item "Write report" at the top', async () => {
-      const inputBox = page.getByRole('textbox');
-      const addButton = page.getByRole('button', { name: '추가' });
+    // Step 11: Verify "Read a book" item is added at the top
+    const listItems = page.getByRole('listitem');
+    await expect(listItems).toHaveCount(2);
+    
+    // Verify order: "Read a book" should be first
+    const items = await listItems.allTextContents();
+    expect(items[0]).toBe('Read a book');
+    
+    // Step 12: Verify "Buy groceries" is in second position
+    expect(items[1]).toBe('Buy groceries');
 
-      // Type second TODO item
-      await inputBox.fill('Write report');
-      
-      // Click add button
-      await addButton.click();
+    // Steps 13-14: Verify persistence after page refresh
+    // Step 13: Refresh the page
+    await page.reload();
 
-      // Verify two items exist
-      const todoList = page.getByRole('list');
-      const listItems = todoList.getByRole('listitem');
-      await expect(listItems).toHaveCount(2);
+    // Step 14: Verify both TODO items are still present after refresh
+    await expect(listItems).toHaveCount(2);
+    
+    // Verify the order is maintained
+    const itemsAfterRefresh = await listItems.allTextContents();
+    expect(itemsAfterRefresh[0]).toBe('Read a book');
+    expect(itemsAfterRefresh[1]).toBe('Buy groceries');
 
-      // Verify newest item is at the top (first position)
-      await expect(listItems.nth(0)).toContainText('Write report');
-      await expect(listItems.nth(1)).toContainText('Buy groceries');
-
-      // Verify input box is cleared again
-      await expect(inputBox).toHaveValue('');
-    });
-
-    // Step 12-13: Verify data persistence after page refresh
-    await test.step('Verify data persistence after page refresh', async () => {
-      // Refresh the page
-      await page.reload();
-
-      // Verify both items still exist in the same order
-      const todoList = page.getByRole('list');
-      const listItems = todoList.getByRole('listitem');
-      
-      await expect(listItems).toHaveCount(2);
-      await expect(listItems.nth(0)).toContainText('Write report');
-      await expect(listItems.nth(1)).toContainText('Buy groceries');
-
-      // Verify UI elements are still present
-      await expect(page.getByRole('heading', { name: 'TODO 리스트' })).toBeVisible();
-      await expect(page.getByRole('textbox')).toBeVisible();
-      await expect(page.getByRole('button', { name: '추가' })).toBeVisible();
-    });
+    // Verify input box is still empty
+    await expect(inputBox).toHaveValue('');
+    
+    // Verify title and button are still visible
+    await expect(title).toBeVisible();
+    await expect(addButton).toBeVisible();
   });
 
-  test('verify empty input is not added', async ({ page }) => {
-    await test.step('Attempt to add empty TODO item', async () => {
-      const addButton = page.getByRole('button', { name: '추가' });
-      const inputBox = page.getByRole('textbox');
+  test('TODO items are stored in localStorage', async ({ page }) => {
+    // Add a TODO item
+    const inputBox = page.getByRole('textbox');
+    const addButton = page.getByRole('button', { name: '추가' });
+    
+    await inputBox.fill('Test localStorage');
+    await addButton.click();
 
-      // Click add button without entering text
-      await addButton.click();
-
-      // Verify no items are added
-      const emptyMessage = page.getByText('할 일이 없습니다.');
-      await expect(emptyMessage).toBeVisible();
-      
-      // Verify list is not created
-      await expect(page.getByRole('list')).not.toBeVisible();
+    // Verify item is in localStorage
+    const localStorageData = await page.evaluate(() => {
+      return localStorage.getItem('todos');
     });
+
+    expect(localStorageData).toBeTruthy();
+    const todos = JSON.parse(localStorageData as string);
+    expect(todos).toHaveLength(1);
+    expect(todos[0]).toContain('Test localStorage');
   });
 });
